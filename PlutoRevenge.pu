@@ -1,0 +1,176 @@
+@startuml PlutoRevenge
+
+namespace Players{
+	namespace Inputs{
+		interface IPlayerInput
+		{
+			float MoveDirection {get;}
+		}
+		class DebugPlayerInput
+
+		DebugPlayerInput ..|> IPlayerInput
+	}
+	class Player <<MonoBehaviour>>
+	class PlayerGunner <<MonoBehaviour>>
+	class PlayerMover <<MonoBehaviour>>
+	class PlayerAnimation <<MonoBehaviour>>
+	class PlayerColorChanger <<MonoBehaviour>>
+
+	Player ..|> Colors.IColor
+	Player ..|> Healths.IHealth : Change Health
+	Player --> Healths.Health : 譲渡
+	Player ..|> Damages.IDamageable : apply Damage
+	PlayerGunner --> Players.Inputs.IPlayerInput : Observe input
+	PlayerMover --> Players.Inputs.IPlayerInput : Observe input
+	PlayerAnimation --> Players.Inputs.IPlayerInput : Observe input
+	PlayerGunner --> Bullets.Bullet
+	PlayerColorChanger --> Players.Inputs.IPlayerInput : Observe input
+	PlayerColorChanger --> Player : Change Color
+	PlayerGunner --> Player : GetColor
+}
+
+namespace Healths{
+	interface IHealth{
+		float HitPoint {get;}
+        float MaxHitPoint {get;}
+	}
+	class Health{
+	}
+}
+
+namespace Presenters{
+	class HealthPresenter <<MonoBehaviour>>
+
+	HealthPresenter --> Healths.IHealth : Observe Health
+}
+
+namespace Bullets{
+	abstract Bullet <<MonoBehaviour>>{
+		float damageValue
+		float InvincibleTime
+	}
+	class PlayerBullet
+	class EnemyBullet
+
+	Bullet --> Colors.IColor
+	Bullet --> Damages.IDamageable : Cause damage
+	PlayerBullet --|> Bullet
+	EnemyBullet --|> Bullet
+
+}
+
+namespace Damages{
+	abstract Damage{
+		float damageValue
+		float InvincibleTime
+	}
+	class ColorDamage{
+		IColor color
+	}
+	interface IDamageable{
+		void ApplyDamage(Damage damage)
+	}
+
+	ColorDamage --|> Damage
+	IDamageable --* Damage
+	ColorDamage --> Colors.IColor
+}
+
+namespace Colors{
+	enum ColorType{
+		None
+		Red
+		Green
+		Blue
+	}
+	interface IColor{
+		ColorType ColorType{get;}
+	}
+
+	IColor --* ColorType
+}
+
+namespace Stages{
+	enum StageType{
+		Stage1
+		Stage2
+	}
+	class stageCamera <<MonoBehaviour>>
+
+	stageCamera --> Managers.IPlayerProvider : Observe Player Position
+}
+
+namespace Enemies{
+	enum EnemyType{
+		Enemy1
+		Enemy2
+	}
+	abstract Enemy <<MonoBehaviour>>
+	class Enemy1
+	class EnemyMover <<MonoBehaviour>>
+	class EnemyAnimation <<MonoBehaviour>>
+
+	Enemy --> Healths.Health : 譲渡
+	Enemy1 --|> Enemy
+	Enemy ..|> Colors.IColor
+	Enemy ..|> Healths.IHealth
+	Enemy --* EnemyType
+	Enemy ..|> Damages.IDamageable : Cause damage
+	Enemy --> Managers.IPlayerProvider : Observe Player Position
+	EnemyMover --> Enemy1
+	EnemyAnimation --> Enemy1
+}
+
+namespace Gimmicks{
+	enum GimmickType{
+		Gimmick1
+		ColorBlock
+	}
+	abstract Gimmick <<MonoBehaviour>>
+	class Gimmick1
+	class ColorBlock
+
+
+	Gimmick1 ..> Damages.IDamageable  : Cause damage
+	Gimmick1 --|> Gimmick
+	ColorBlock --|> Gimmick
+	ColorBlock --> Managers.IPlayerProvider : Observe Player Color
+	Gimmick --* GimmickType
+}
+
+namespace GateWaies{
+	class UserDataGateWay
+	class ScoreDataGateWay
+}
+
+namespace Managers{
+	enum GameState{
+		initialize
+		GameUpdate
+		Result
+	}
+	interface IGameStateManager{
+		GameState GameState {get;}
+	}
+	class GameStateManager <<MonoBehaviour>>
+	interface IPlayerProvider{
+		IColor PlayerColor {get;}
+		Vector3 PlayerPosition {get;}
+		bool IsAlive {get;}
+	}
+	class DebugPlayerProvider <<MonoBehaviour>>
+	class GameData{
+		string UserName {get;}
+		StageType StageType {get;}
+	}
+	class ScoreManager <<MonoBehaviour>>
+
+	GameData --> Stages.StageType
+	ScoreManager --> IGameStateManager : Observe GameState
+	ScoreManager --> GateWaies.ScoreDataGateWay : Apiをたたくためにスコアを送る
+	GameStateManager --> IPlayerProvider: Observe player is alive
+	GameStateManager ..|> IGameStateManager
+	IGameStateManager --* GameState
+	DebugPlayerProvider ..|> IPlayerProvider
+}
+@enduml
